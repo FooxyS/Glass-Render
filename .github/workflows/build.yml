@@ -1,0 +1,35 @@
+name: Build C++ Coursework
+
+# Когда запускать проверку:
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Скачиваем код из репозитория
+    - uses: actions/checkout@v4
+
+    # 2. Устанавливаем библиотеки (GLFW, GLEW, GLM) в виртуальной машине Ubuntu
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libglfw3-dev libglew-dev libglm-dev
+
+    # 3. Компиляция (Длинная команда, как в требованиях)
+    # Мы проверяем, существует ли файл main.cpp перед запуском, чтобы CI не падал
+    - name: Compile Source Code
+      run: |
+        if [ -f main.cpp ]; then
+          g++ main.cpp -o glass_render \
+            -std=c++11 \
+            -lglfw -lGLEW -lGL
+          echo "Build Success!"
+        else
+          echo "main.cpp not found yet. Skipping build."
+        fi

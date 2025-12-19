@@ -1,0 +1,14 @@
+# Игнорировать скомпилированные файлы
+*.o
+*.out
+*.exe
+glass_app
+glass_render
+
+# Системные файлы macOS
+.DS_Store
+
+# Папки IDE (если вдруг откроешь в VSCode/CLion)
+.vscode/
+.idea/
+cmake-build-debug/
