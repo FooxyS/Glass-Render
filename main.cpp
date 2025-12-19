@@ -165,24 +165,53 @@ int main() {
     
     glUseProgram(shaderProgram); // Активируем шейдер перед циклом
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // Пока просто фон
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
-        
-        // Очистка с буфером глубины
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // --- МАТРИЦЫ ---
         glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 2.0f, 6.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         
+        // Вращатель мира для наглядности
+        glm::mat4 modelRotator = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime() * 0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
+
         unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
         unsigned int projLoc = glGetUniformLocation(shaderProgram, "projection");
+        unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
+        unsigned int colorLoc = glGetUniformLocation(shaderProgram, "color");
+
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, &projection[0][0]);
 
-        // Пока не рисуем (Draw call нет), просто обновляем матрицу каждый кадр
+        // --- PAINTER'S ALGORITHM (Сортировка) ---
+        std::map<float, glm::vec3> sortedWindows;
+        for (unsigned int i = 0; i < windows.size(); i++) {
+            // Считаем позицию с учетом поворота мира
+            glm::vec4 worldPos = modelRotator * glm::vec4(windows[i], 1.0f);
+            // Считаем расстояние до камеры (0, 2, 6)
+            float distance = glm::length(glm::vec3(0.0f, 2.0f, 6.0f) - glm::vec3(worldPos));
+            sortedWindows[distance] = windows[i];
+        }
+
+        // Отрисовка
+        glBindVertexArray(VAO);
+        // Reverse iterator: рисуем от дальних (большой distance) к ближним
+        for (std::map<float, glm::vec3>::reverse_iterator it = sortedWindows.rbegin(); it != sortedWindows.rend(); ++it) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::rotate(model, (float)glfwGetTime() * 0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::translate(model, it->second);
+            
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &model[0][0]);
+            glUniform4f(colorLoc, 0.3f, 0.6f, 0.9f, 0.3f); // Полупрозрачный голубой
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
