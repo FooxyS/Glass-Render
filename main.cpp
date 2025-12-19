@@ -156,13 +156,33 @@ int main() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
+    std::vector<glm::vec3> windows;
+    windows.push_back(glm::vec3(-1.5f,  0.0f, -0.48f));
+    windows.push_back(glm::vec3( 1.5f,  0.0f,  0.51f));
+    windows.push_back(glm::vec3( 0.0f,  0.0f,  0.7f));
+    windows.push_back(glm::vec3(-0.3f,  0.0f, -2.3f));
+    windows.push_back(glm::vec3( 0.5f,  0.0f, -0.6f));
+    
+    glUseProgram(shaderProgram); // Активируем шейдер перед циклом
+
     // Пока просто фон
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
-
+        
+        // Очистка с буфером глубины
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // --- МАТРИЦЫ ---
+        glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 2.0f, 6.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        
+        unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
+        unsigned int projLoc = glGetUniformLocation(shaderProgram, "projection");
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, &projection[0][0]);
+
+        // Пока не рисуем (Draw call нет), просто обновляем матрицу каждый кадр
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
